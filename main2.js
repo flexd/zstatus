@@ -44,28 +44,29 @@ function draw() {
 	// Draw circles!
 	var svg = d3.select("#right svg");
 	
-	var nodelist = d3.values(nodes);
 	var force = d3.layout.force()
 		.gravity(0.05)
 		.charge(-120)//function(d, i) { return i ? 0 : -2000; })
-		.nodes(nodelist)
+		.nodes(nodes)
 		.size([w, h]);
 
-	
+	if (nodes == null) return;
+ 	var root = nodes[0];
+	root.radius = 0;
+	root.fixed = true;
 
 	force.start();
 
 	
-	// Create each node and append a circle, set radius and color.
+
 	var node = svg.selectAll("circle")
-		.data(nodelist)
+		.data(nodes)
 		.enter().append("svg:circle")
 		.attr("r", function(d) { return d.radius; })
 		.style("fill", function(d, i) { return d.color; });
-	// Drag and drop!
-	node.call(force.drag);
 
 	// jQuery Tipsy tooltips.
+
 	$('svg circle').tipsy({ 
 		gravity: 'w', 
 		html: true, 
@@ -76,12 +77,12 @@ function draw() {
 	});
 
 	force.on("tick", function(e) {
-		var q = d3.geom.quadtree(nodelist),
+		var q = d3.geom.quadtree(nodes),
 		  i = 0,
-		  n = nodelist.length;
+		  n = nodes.length;
 
 		while (++i < n) {
-		q.visit(collide(nodelist[i]));
+		q.visit(collide(nodes[i]));
 		}
 
 		svg.selectAll("circle")
@@ -126,16 +127,8 @@ function draw() {
 }
 
 var updateData = function() {
-	//var params = {
-// 		"search" : {"host" : "alp-spb1-*.prod-edb"},
-// 		"groupids" : "30",
-// 		"output" : "extend",
-// 		"sortfield" : "host",
-// 		"searchWildcardsEnabled" : 1
-// 	};
 	var params = {
 		"output" : "extend",
-		"groupids" : "2",
 		"sortfield" : "host"
 	};
 	server.sendAjaxRequest("host.get", params, function (resp) {
@@ -144,12 +137,7 @@ var updateData = function() {
 		var content = "";
 		console.log(resp);
 		var servers = resp.result;
-
-		if (nodes.size == 0) {
-		 $('#header').html('NO DATA');
-		 return;
-	}
-
+		nodes = [];
 		for (var i in servers) {
 			var s = servers[i];
 			s.radius = 15;
@@ -166,7 +154,7 @@ var updateData = function() {
 			}
 			s.sstatus = status;
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>"; //+ ((s.available == 2) ? (" : " + s.error) : "") + 
-			nodes[s.host] = s;
+			nodes.push(s);
 		}
 		$('#left').html(header + content + footer);
 		draw();
@@ -220,6 +208,6 @@ var errorMethod = function() {
         errormsg += '<li>' + key + ' : ' + value + '</li>';
     });
 
-    $('#header').html('<ul>' + errormsg + '</ul>');
+    $('#result').html('<ul>' + errormsg + '</ul>');
 }
 
