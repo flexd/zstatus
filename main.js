@@ -39,7 +39,7 @@ var loginSuccess = function() {
 };
 function draw() {
 
-	draw = Function(""); // This function can only be called once.
+	//draw = Function(""); // This function can only be called once.
 	
 	// Draw circles!
 	var svg = d3.select("#right svg");
@@ -49,19 +49,22 @@ function draw() {
 		.gravity(0.05)
 		.charge(-120)//function(d, i) { return i ? 0 : -2000; })
 		.nodes(nodelist)
-		.size([w, h]);
-
-	
-
-	force.start();
+		.size([w, h])
+		.start();
 
 	
 	// Create each node and append a circle, set radius and color.
-	var node = svg.selectAll("circle")
-		.data(nodelist)
-		.enter().append("svg:circle")
-		.attr("r", function(d) { return d.radius; })
-		.style("fill", function(d, i) { return d.color; });
+	var node = svg.selectAll("circle").data(nodelist);
+	node.enter().append("svg:circle")
+			.attr("r", 0)
+			.transition()
+			.attr("r", function(d) { return d.radius; })
+			.style("fill", function(d, i) { return d.color; });
+
+	node.attr("r", function(d) { return d.radius; })
+			.style("fill", function(d, i) { return d.color; });
+
+	node.exit().transition().attr("r", 0).remove();
 	// Drag and drop!
 	node.call(force.drag);
 
