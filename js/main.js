@@ -10,7 +10,9 @@ $(document).ready(function() {
 	server.getApiVersion(null, function(response){
 		$('#version').html('API Version: ' + response.result);
 		doAuth();
-	});
+	}, function() {
+    alert("Some kind of error has occured! Most likely this means there is no connection to your zabbix server, look in the console! :)");
+  });
 
 	// Append a svg tag to #right with the correct width and height.
 	d3.select("#right").append("svg:svg")
