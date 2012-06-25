@@ -5,7 +5,10 @@ body {
   font-size: 14px;
   font-family: "Helvetica Neue", Helvetica;
 }
-
+.nodetext {
+  pointer-events: none;
+  font: 10px sans-serif;
+}
 #chart, #header, #footer {
   position: absolute;
   top: 0;
