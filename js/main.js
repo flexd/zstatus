@@ -1,23 +1,23 @@
 
 
 // Initialize the node storage variables.
-var nodes = [];
+
 
 // Append a svg tag to #right with the correct width and height.
 
 var svg = d3.select("#right").append("svg:svg").attr("width", w).attr("height", h);
-//var svg = d3.select("#right svg");
 
 
 
-var force = d3.layout.force().nodes(nodes.slice(0))
-							 .gravity(.05)
+
+var force = d3.layout.force().gravity(.5)
     						 .distance(100)
     						 .charge(-100)
-			                 .size([w, h])
-			                 .start();
+			                 .size([w, h]);
+
+var nodes = force.nodes();
 // jQuery Tipsy tooltips.
-$('svg circle').tipsy({ 
+$('svg g.node').tipsy({ 
 	gravity: 'w', 
 	html: true, 
 	title: function() {
@@ -32,10 +32,10 @@ force.on("tick", function (e) {
 	  n = nodes.length;
 
 	while (++i < n) {
-	q.visit(collide(nodes[i]));
+		q.visit(collide(nodes[i]));
 	}
 
-	svg.selectAll("circle")
+	svg.selectAll("g.node")
 	  .attr("cx", function (d) { return d.x; })
 	  .attr("cy", function (d) { return d.y; });
 });
@@ -96,6 +96,27 @@ var loginSuccess = function () {
 		}, 3000);
 };
 
+function draw () {
+	//$('#left').html(header + content + footer);
+
+	var node = svg.selectAll("g.node").data(nodes);//, function (d) { return d.host;});
+	node.call(force.drag);
+	var nodeEnter = node.enter().append("svg:g")
+		.attr("class", "node");
+	nodeEnter.append("svg:circle")
+		.attr("r", function(d) { return d.radius; })
+		.style("fill", function(d, i) { return d.color; });
+
+	nodeEnter.append("svg:text")
+		.attr("class", "nodetext")
+		.attr("dx", 12)
+		.attr("dy", ".35em")
+		.text(function(d) { return d.host });
+
+	node.exit().remove();
+
+	force.start();
+}
 var updateData = function () {
 	//var params = {
 // 		"search" : {"host" : "alp-spb1-*.prod-edb"},
@@ -121,7 +142,6 @@ var updateData = function () {
 		 return;
 	}
 		
-		nodes = [];
 		for (var i in servers) {
 			var s = servers[i];
 			s.radius = 15;
@@ -140,27 +160,7 @@ var updateData = function () {
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>";
 			nodes.push(s);
 		}
-		//$('#left').html(header + content + footer);
-
-		var node = svg.selectAll("circle").data(nodes.slice(1), function (d) { return d.host;});
-
-		var nodeEnter = node.enter().append("svg:circle")
-      		.attr("r", function(d) { return d.radius; })
-			.style("fill", function(d, i) { return d.color; })
-      		.call(force.drag);
-
-      	nodeEnter.append("svg:text")
-      		.attr("class", "nodetext")
-      		.attr("dx", 12)
-      		.attr("dy", ".35em")
-      		.text(function(d) { return d.host });
-
-      	node.exit().remove();
-		
-  		force.start();
-		
-
-	}, errorMethod);
+	}, errorMethod, draw);
 }
 var errorMethod = function () {
 
