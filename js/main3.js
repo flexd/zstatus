@@ -13,7 +13,8 @@ var svg = d3.select("#right").append("svg:svg").attr("width", w).attr("height", 
 var force = d3.layout.force().gravity(.05)
     						 .distance(300)
     						 .charge(-200)
-			                 .size([w, h]);
+			                 .size([w, h])
+			                 .start();
 
 var nodes = force.nodes();
 
@@ -64,41 +65,22 @@ function collide(node) {
 		|| y2 < ny1;
 	};
 }
-function authenticate() {
 
-	server.userLogin(null, function () {
-        loginSuccess();
-    },
-    errorMethod);
-}
 $(document).ready(function () {
-  // Handler for .ready() called.
-  // Create the server object for zabbix, and check the version as required before logging in.
-	server = new $.jqzabbix(options);
-	server.getApiVersion(null, function (response) {
-		$('#version').html('API Version: ' + response.result);
-		authenticate();
-	}, function () {
-    alert("Some kind of error has occured! Most likely this means there is no connection to your zabbix server, look in the console! :)");
-  	});
-});
-
-
-
-
-var loginSuccess = function () {
-		// Start the loop to keep doing this!
+	// Start the loop to keep doing this!
 		updateData();
 		setInterval(function () {
 			updateData();
 		}, 3000);
-};
+});
+
+
 
 function draw () {
 	//$('#left').html(header + content + footer);
 	console.log(nodes);
 	var node = svg.selectAll("g.node").data(nodes, function (d) { return d.hostid;});
-	node.call(force.drag);
+
 	var nodeEnter = node.enter().append("svg:g")
 		.attr("class", "node");
 	nodeEnter.append("svg:circle")
@@ -110,7 +92,7 @@ function draw () {
 		.attr("dx", 18)
 		.attr("dy", ".35em")
 		.text(function(d) { return d.host });
-
+	nodeEnter.call(force.drag);
 	node.exit().remove();
 
 	force.start();
@@ -128,17 +110,12 @@ var updateData = function () {
 		"groupids" : "2",
 		"sortfield" : "host"
 	};
-	server.sendAjaxRequest("host.get", params, function (resp) {
+	d3.json("servers.json", function (resp) {
 		var header = "<ul>";
 		var footer = "</ul>";
 		var content = "";
 		
 		var servers = resp.result;
-
-		if (nodes.size == 0) {
-		 $('#header').html('NO DATA');
-		 return;
-	}
 		
 		for (var i in servers) {
 			var s = servers[i];
@@ -163,8 +140,8 @@ var updateData = function () {
 				nodes.push(s);
 			}
 		}
-
-	}, errorMethod, draw);
+		draw();
+	});
 }
 function containsObject(obj, list) {
     var i;
@@ -185,14 +162,4 @@ function getKey(obj, list) {
     }
 
     return -1;
-}
-var errorMethod = function () {
-
-    var errormsg = '';
-
-    $.each(server.isError(), function (key, value) {
-        errormsg += value;
-    });
-
-    $('#header').html('<h1>' + errormsg + '</h1>');
 }
