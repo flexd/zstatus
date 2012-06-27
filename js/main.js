@@ -10,14 +10,15 @@ var svg = d3.select("#right").append("svg:svg").attr("width", w).attr("height", 
 
 
 
-var force = d3.layout.force().gravity(.5)
-    						 .distance(100)
-    						 .charge(-100)
+var force = d3.layout.force().gravity(.05)
+    						 .distance(300)
+    						 .charge(-200)
 			                 .size([w, h]);
 
 var nodes = force.nodes();
+
 // jQuery Tipsy tooltips.
-$('svg g.node').tipsy({ 
+$('g .node').tipsy({ 
 	gravity: 'w', 
 	html: true, 
 	title: function() {
@@ -26,18 +27,15 @@ $('svg g.node').tipsy({
 	}
 });
 
-force.on("tick", function (e) {
-	var q = d3.geom.quadtree(nodes),
-	  i = 0,
-	  n = nodes.length;
+force.on("tick", function() {
+  svg.selectAll("g.node")
+      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-	while (++i < n) {
-		q.visit(collide(nodes[i]));
-	}
-
-	svg.selectAll("g.node")
-	  .attr("cx", function (d) { return d.x; })
-	  .attr("cy", function (d) { return d.y; });
+  // svg.selectAll("line.link")
+  //     .attr("x1", function(d) { return d.source.x; })
+  //     .attr("y1", function(d) { return d.source.y; })
+  //     .attr("x2", function(d) { return d.target.x; })
+  //     .attr("y2", function(d) { return d.target.y; });
 });
 
 function collide(node) {
@@ -66,7 +64,7 @@ function collide(node) {
 		|| y2 < ny1;
 	};
 }
-function doAuth() {
+function authenticate() {
 
 	server.userLogin(null, function () {
         loginSuccess();
@@ -79,7 +77,7 @@ $(document).ready(function () {
 	server = new $.jqzabbix(options);
 	server.getApiVersion(null, function (response) {
 		$('#version').html('API Version: ' + response.result);
-		doAuth();
+		authenticate();
 	}, function () {
     alert("Some kind of error has occured! Most likely this means there is no connection to your zabbix server, look in the console! :)");
   	});
@@ -98,8 +96,8 @@ var loginSuccess = function () {
 
 function draw () {
 	//$('#left').html(header + content + footer);
-
-	var node = svg.selectAll("g.node").data(nodes);//, function (d) { return d.host;});
+	console.log(nodes);
+	var node = svg.selectAll("g.node").data(nodes.slice(0), function (d) { return d.hostid;});
 	node.call(force.drag);
 	var nodeEnter = node.enter().append("svg:g")
 		.attr("class", "node");
@@ -109,7 +107,7 @@ function draw () {
 
 	nodeEnter.append("svg:text")
 		.attr("class", "nodetext")
-		.attr("dx", 12)
+		.attr("dx", 18)
 		.attr("dy", ".35em")
 		.text(function(d) { return d.host });
 
@@ -134,7 +132,7 @@ var updateData = function () {
 		var header = "<ul>";
 		var footer = "</ul>";
 		var content = "";
-		console.log(resp);
+
 		var servers = resp.result;
 
 		if (nodes.size == 0) {
@@ -158,18 +156,44 @@ var updateData = function () {
 			}
 			s.sstatus = status;
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>";
-			nodes.push(s);
+			if (containsObject(s, nodes)) {
+				nodes[getKey(s, nodes)] = s;
+			}
+			else {
+				nodes.push(s);
+			}
 		}
+
 	}, errorMethod, draw);
+}
+function containsObject(obj, list) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+        if (list[i].name === obj.name) {
+            return true;
+        }
+    }
+
+    return false;
+}
+function getKey(obj, list) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+        if (list[i].name === obj.name) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 var errorMethod = function () {
 
     var errormsg = '';
 
     $.each(server.isError(), function (key, value) {
-        errormsg += '<li>' + key + ' : ' + value + '</li>';
+        errormsg += value;
     });
 
-    $('#header').html('<ul>' + errormsg + '</ul>');
+    $('#header').html('<h1>' + errormsg + '</h1>');
 }
 
