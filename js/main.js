@@ -97,7 +97,7 @@ var loginSuccess = function () {
 function draw () {
 	//$('#left').html(header + content + footer);
 	console.log(nodes);
-	var node = svg.selectAll("g.node").data(nodes.slice(0), function (d) { return d.hostid;});
+	var node = svg.selectAll("g.node").data(nodes, function (d) { return d.hostid;});
 	node.call(force.drag);
 	var nodeEnter = node.enter().append("svg:g")
 		.attr("class", "node");
