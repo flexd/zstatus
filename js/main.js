@@ -196,4 +196,3 @@ var errorMethod = function () {
 
     $('#header').html('<h1>' + errormsg + '</h1>');
 }
-
