@@ -64,35 +64,16 @@ function collide(node) {
 		|| y2 < ny1;
 	};
 }
-function authenticate() {
 
-	server.userLogin(null, function () {
-        loginSuccess();
-    },
-    errorMethod);
-}
 $(document).ready(function () {
-  // Handler for .ready() called.
-  // Create the server object for zabbix, and check the version as required before logging in.
-	server = new $.jqzabbix(options);
-	server.getApiVersion(null, function (response) {
-		$('#version').html('API Version: ' + response.result);
-		authenticate();
-	}, function () {
-    alert("Some kind of error has occured! Most likely this means there is no connection to your zabbix server, look in the console! :)");
-  	});
-});
-
-
-
-
-var loginSuccess = function () {
-		// Start the loop to keep doing this!
+	// Start the loop to keep doing this!
 		updateData();
 		setInterval(function () {
 			updateData();
 		}, 3000);
-};
+});
+
+
 
 function draw () {
 	//$('#left').html(header + content + footer);
@@ -128,17 +109,12 @@ var updateData = function () {
 		"groupids" : "2",
 		"sortfield" : "host"
 	};
-	server.sendAjaxRequest("host.get", params, function (resp) {
+	d3.json("servers.json", function (resp) {
 		var header = "<ul>";
 		var footer = "</ul>";
 		var content = "";
 		
 		var servers = resp.result;
-
-		if (nodes.size == 0) {
-		 $('#header').html('NO DATA');
-		 return;
-	}
 		
 		for (var i in servers) {
 			var s = servers[i];
@@ -163,8 +139,8 @@ var updateData = function () {
 				nodes.push(s);
 			}
 		}
-
-	}, errorMethod, draw);
+		draw();
+	});
 }
 function containsObject(obj, list) {
     var i;
@@ -185,14 +161,4 @@ function getKey(obj, list) {
     }
 
     return -1;
-}
-var errorMethod = function () {
-
-    var errormsg = '';
-
-    $.each(server.isError(), function (key, value) {
-        errormsg += value;
-    });
-
-    $('#header').html('<h1>' + errormsg + '</h1>');
 }
