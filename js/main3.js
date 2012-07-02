@@ -13,7 +13,8 @@ var svg = d3.select("#right").append("svg:svg").attr("width", w).attr("height", 
 var force = d3.layout.force().gravity(.05)
     						 .distance(300)
     						 .charge(-200)
-			                 .size([w, h]);
+			                 .size([w, h])
+			                 .start();
 
 var nodes = force.nodes();
 
@@ -79,7 +80,7 @@ function draw () {
 	//$('#left').html(header + content + footer);
 	console.log(nodes);
 	var node = svg.selectAll("g.node").data(nodes, function (d) { return d.hostid;});
-	node.call(force.drag);
+
 	var nodeEnter = node.enter().append("svg:g")
 		.attr("class", "node");
 	nodeEnter.append("svg:circle")
@@ -91,7 +92,7 @@ function draw () {
 		.attr("dx", 18)
 		.attr("dy", ".35em")
 		.text(function(d) { return d.host });
-
+	nodeEnter.call(force.drag);
 	node.exit().remove();
 
 	force.start();
