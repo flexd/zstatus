@@ -18,19 +18,29 @@ var force = d3.layout.force().gravity(.09)
 
 var nodes = force.nodes();
 
-// jQuery Tipsy tooltips.
-$('g.node').tipsy({ 
-	gravity: 'w', 
-	html: true, 
-	title: function() {
-	return d.host + ((!d.sstatus) ?( " : " + d.error) : ""); 
-	}
-});
 
 force.on("tick", function() {
   svg.selectAll("g.node")
-      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+      .attr("transform", function(d) { 
+        if (d.available == 0) {
+          d.x -= 0.3;
+        }
+        if (d.available == 1) {
+          d.x += 0.3;
+        }
+        if (d.available == 2) {
+          d.y -= 0.3;
+        }
+        return "translate(" + d.x + "," + d.y + ")"; 
+      
+      });
+  var q = d3.geom.quadtree(nodes),
+      i = 0,
+      n = nodes.length;
 
+  while (++i < n) {
+    q.visit(collide(nodes[i]));
+  } 
   // svg.selectAll("line.link")
   //     .attr("x1", function(d) { return d.source.x; })
   //     .attr("y1", function(d) { return d.source.y; })
@@ -71,6 +81,18 @@ $(document).ready(function () {
     $('#version').html('API Version: ' + response.result);
     authenticate();
   });
+  // jQuery Tipsy tooltips.
+  $('g').tipsy({
+    gravity: 'w',
+    html: true,
+    title: function() {
+      return d.host + ((!d.sstatus) ?( " : " + d.error) : "");
+    }
+  });
+  //
+
+
+
 
 	// Start the loop to keep doing this!
 });
@@ -105,27 +127,27 @@ function draw () {
 
 	nodeEnter.append("svg:text")
 		.attr("class", "nodetext")
-		.attr("dx", 18)
+		.attr("dx", function(d) { return d.radius + 2;})
 		.attr("dy", ".35em")
-		.text(function(d) { return d.error });
+		.text(function(d) { if (d.error != "") return d.host + ": " + d.error });
 	nodeEnter.call(force.drag);
 	node.exit().remove();
 
 	force.start();
 }
 var updateData = function () {
-	//var params = {
-// 		"search" : {"host" : "alp-spb1-*.prod-edb"},
-// 		"groupids" : "30",
-// 		"output" : "extend",
-// 		"sortfield" : "host",
-// 		"searchWildcardsEnabled" : 1
-// 	};
 	var params = {
-		"output" : "extend",
-		"groupids" : "2",
-		"sortfield" : "host"
-	};
+ 		"search" : {"host" : "alp-spb1-*.prod-edb"},
+ 		"groupids" : "30",
+ 		"output" : "extend",
+ 		"sortfield" : "host",
+ 		"searchWildcardsEnabled" : 1
+ 	};
+//	var params = {
+	//	"output" : "extend",
+	//	"groupids" : "2",
+	//	"sortfield" : "host"
+	//};
 	//d3.json("servers.json", function (resp) {
   server.sendAjaxRequest("host.get", params, function (resp) {
     var header = "<ul>";
@@ -147,6 +169,7 @@ var updateData = function () {
 			if (s.available == 2) {
 				s.color = d3.rgb("red");
 				status = false;
+        s.radius = 40;
 			}
 			s.sstatus = status;
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>";
@@ -166,7 +189,7 @@ var updateData = function () {
 function containsObject(obj, list) {
     var i;
     for (i = 0; i < list.length; i++) {
-        if (list[i].name === obj.name) {
+        if (list[i].hostid === obj.hostid) {
             return true;
         }
     }
@@ -176,7 +199,7 @@ function containsObject(obj, list) {
 function getKey(obj, list) {
     var i;
     for (i = 0; i < list.length; i++) {
-        if (list[i].name === obj.name) {
+        if (list[i].hostid === obj.hostid) {
             return i;
         }
     }
