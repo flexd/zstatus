@@ -29,8 +29,25 @@ $('g.node').tipsy({
 
 force.on("tick", function() {
   svg.selectAll("g.node")
-      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+      .attr("transform", function(d) {
+        if (d.available == 0) {
+          d.x -= 0.3;
+        }
+        if (d.available == 1) {
+          d.x += 0.3;
+        }
+        if (d.available == 2) { 
+          d.y -= 0.3;
+        }
+        return "translate(" + d.x + "," + d.y + ")"; 
+      });
+  var q = d3.geom.quadtree(nodes),
+      i = 0,
+      n = nodes.length;
 
+  while (++i < n) {
+    q.visit(collide(nodes[i]));
+  } 
   // svg.selectAll("line.link")
   //     .attr("x1", function(d) { return d.source.x; })
   //     .attr("y1", function(d) { return d.source.y; })
@@ -105,7 +122,7 @@ function draw () {
 
 	nodeEnter.append("svg:text")
 		.attr("class", "nodetext")
-		.attr("dx", 18)
+		.attr("dx", function(d) { return d.radius + 4})
 		.attr("dy", ".35em")
 		.text(function(d) { return d.error });
 	nodeEnter.call(force.drag);
@@ -114,18 +131,13 @@ function draw () {
 	force.start();
 }
 var updateData = function () {
-	//var params = {
-// 		"search" : {"host" : "alp-spb1-*.prod-edb"},
-// 		"groupids" : "30",
-// 		"output" : "extend",
-// 		"sortfield" : "host",
-// 		"searchWildcardsEnabled" : 1
-// 	};
 	var params = {
-		"output" : "extend",
-		"groupids" : "2",
-		"sortfield" : "host"
-	};
+ 		"search" : {"host" : "alp-spb1-*.prod-edb"},
+ 		"groupids" : "30",
+ 		"output" : "extend",
+ 		"sortfield" : "host",
+ 		"searchWildcardsEnabled" : 1
+ 	};
 	//d3.json("servers.json", function (resp) {
   server.sendAjaxRequest("host.get", params, function (resp) {
     var header = "<ul>";
@@ -147,6 +159,7 @@ var updateData = function () {
 			if (s.available == 2) {
 				s.color = d3.rgb("red");
 				status = false;
+        s.radius = 40;
 			}
 			s.sstatus = status;
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>";
@@ -166,7 +179,7 @@ var updateData = function () {
 function containsObject(obj, list) {
     var i;
     for (i = 0; i < list.length; i++) {
-        if (list[i].name === obj.name) {
+        if (list[i].hostid === obj.hostid) {
             return true;
         }
     }
@@ -176,7 +189,7 @@ function containsObject(obj, list) {
 function getKey(obj, list) {
     var i;
     for (i = 0; i < list.length; i++) {
-        if (list[i].name === obj.name) {
+        if (list[i].hostid === obj.hostid) {
             return i;
         }
     }
@@ -188,9 +201,9 @@ var errorMethod = function() {
     var errormsg = '';
 
     $.each(server.isError(), function(key, value) {
-        errormsg += '<li>' + key + ' : ' + value + '</li>';
+        errormsg += value;
     });
 
-    $('#result').html('<ul>' + errormsg + '</ul>');
+    $('#left').html(errormsg);
 }
 
