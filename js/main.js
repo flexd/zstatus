@@ -10,19 +10,19 @@ var svg = d3.select("#right").append("svg:svg").attr("width", w).attr("height", 
 
 
 
-var force = d3.layout.force().gravity(.05)
-    						 .distance(300)
-    						 .charge(-200)
-			                 .size([w, h]);
+var force = d3.layout.force().gravity(.09)
+    						 .distance(30)
+    						 .charge(-50)
+			                 .size([w, h])
+			                 .start();
 
 var nodes = force.nodes();
 
 // jQuery Tipsy tooltips.
-$('g .node').tipsy({ 
+$('g.node').tipsy({ 
 	gravity: 'w', 
 	html: true, 
 	title: function() {
-	var d = this.__data__;
 	return d.host + ((!d.sstatus) ?( " : " + d.error) : ""); 
 	}
 });
@@ -64,41 +64,39 @@ function collide(node) {
 		|| y2 < ny1;
 	};
 }
-function authenticate() {
 
-	server.userLogin(null, function () {
-        loginSuccess();
-    },
-    errorMethod);
-}
 $(document).ready(function () {
-  // Handler for .ready() called.
-  // Create the server object for zabbix, and check the version as required before logging in.
-	server = new $.jqzabbix(options);
-	server.getApiVersion(null, function (response) {
-		$('#version').html('API Version: ' + response.result);
-		authenticate();
-	}, function () {
-    alert("Some kind of error has occured! Most likely this means there is no connection to your zabbix server, look in the console! :)");
-  	});
+  server = new $.jqzabbix(options);
+  server.getApiVersion(null, function(response){
+    $('#version').html('API Version: ' + response.result);
+    authenticate();
+  });
+
+	// Start the loop to keep doing this!
 });
 
+function authenticate() {
 
+  server.userLogin(null, function(){
+        updateLoop();
+    }, errorMethod );
+}
 
+var updateLoop = function() {
 
-var loginSuccess = function () {
-		// Start the loop to keep doing this!
-		updateData();
-		setInterval(function () {
-			updateData();
-		}, 3000);
+    updateData(); // First call
+
+    // Start the loop to keep doing this!
+    setInterval(function() {
+      updateData();
+    }, 30000);
 };
 
 function draw () {
 	//$('#left').html(header + content + footer);
 	console.log(nodes);
 	var node = svg.selectAll("g.node").data(nodes, function (d) { return d.hostid;});
-	node.call(force.drag);
+
 	var nodeEnter = node.enter().append("svg:g")
 		.attr("class", "node");
 	nodeEnter.append("svg:circle")
@@ -109,8 +107,8 @@ function draw () {
 		.attr("class", "nodetext")
 		.attr("dx", 18)
 		.attr("dy", ".35em")
-		.text(function(d) { return d.host });
-
+		.text(function(d) { return d.error });
+	nodeEnter.call(force.drag);
 	node.exit().remove();
 
 	force.start();
@@ -128,17 +126,13 @@ var updateData = function () {
 		"groupids" : "2",
 		"sortfield" : "host"
 	};
-	server.sendAjaxRequest("host.get", params, function (resp) {
-		var header = "<ul>";
+	//d3.json("servers.json", function (resp) {
+  server.sendAjaxRequest("host.get", params, function (resp) {
+    var header = "<ul>";
 		var footer = "</ul>";
 		var content = "";
 		
 		var servers = resp.result;
-
-		if (nodes.size == 0) {
-		 $('#header').html('NO DATA');
-		 return;
-	}
 		
 		for (var i in servers) {
 			var s = servers[i];
@@ -157,13 +151,16 @@ var updateData = function () {
 			s.sstatus = status;
 			content += "<li>" + s.host + " = " + ((status) ? "Oppe" : "Nede") + "</li>";
 			if (containsObject(s, nodes)) {
-				nodes[getKey(s, nodes)] = s;
+        var index = getKey(s, nodes);
+        var old = nodes[index];
+        var newserver = $.extend({}, old, s);
+        //var newserver = d3.merge(old, s);
+				nodes[index] = newserver;
 			}
 			else {
 				nodes.push(s);
 			}
 		}
-
 	}, errorMethod, draw);
 }
 function containsObject(obj, list) {
@@ -186,13 +183,14 @@ function getKey(obj, list) {
 
     return -1;
 }
-var errorMethod = function () {
+var errorMethod = function() {
 
     var errormsg = '';
 
-    $.each(server.isError(), function (key, value) {
-        errormsg += value;
+    $.each(server.isError(), function(key, value) {
+        errormsg += '<li>' + key + ' : ' + value + '</li>';
     });
 
-    $('#header').html('<h1>' + errormsg + '</h1>');
+    $('#result').html('<ul>' + errormsg + '</ul>');
 }
+
